@@ -1,0 +1,41 @@
+{
+  "name": "mission-list-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "nodemon",
+    "start": "node src/index.js",
+    "build": "node --check src/index.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:push": "prisma db push"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^11.0.0",
+    "@fastify/jwt": "^10.0.0",
+    "@fastify/rate-limit": "^10.0.0",
+    "@prisma/client": "^6.0.0",
+    "bcrypt": "^6.0.0",
+    "dotenv": "^16.4.5",
+    "fastify": "^5.0.0",
+    "prisma": "^6.0.0",
+    "resend": "^3.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "nodemon": "^3.1.0",
+    "prettier": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

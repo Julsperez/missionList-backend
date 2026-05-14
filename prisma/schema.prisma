@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  password_hash       String
+  refresh_token       String?
+  is_verified         Boolean   @default(false)
+  verify_token        String?
+  reset_token         String?
+  reset_token_expires DateTime?
+  created_at          DateTime  @default(now())
+
+  profile  Profile?
+  settings UserSettings?
+  todos    Todo[]
+
+  @@map("users")
+}
+
+model Profile {
+  user_id String @id
+  name    String
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model UserSettings {
+  user_id  String @id
+  theme    String @default("system")
+  language String @default("es")
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model Todo {
+  id              String    @id @default(cuid())
+  user_id         String
+  mission_id      String
+  title           String
+  subtitle        String?
+  description     String?
+  status          String    @default("in-progress")
+  type_of_mission String    @default("main")
+  due_date        DateTime?
+  objectives      Json      @default("[]")
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("todos")
+}
