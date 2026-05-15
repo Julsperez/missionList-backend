@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import jwt from 'jsonwebtoken'
 import { prisma } from '../../lib/prisma.js'
 import bcrypt from 'bcrypt'
 import { sendVerificationEmail } from '../email/email.service.js'
@@ -68,7 +69,7 @@ export class AuthService {
     return { message: 'Email verified successfully.' }
   }
 
-  async login({ email, password }) {
+  async validateCredentials({ email, password }) {
     const user = await prisma.user.findUnique({ where: { email }, include: { profile: true } })
 
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
@@ -83,6 +84,22 @@ export class AuthService {
       throw err
     }
 
-    return { id: user.id, email: user.email, name: user.profile?.name }
+    return user
+  }
+
+  generateAccessToken(userId, email) {
+    return jwt.sign({ userId, email }, process.env.JWT_SECRET, { expiresIn: '15m' })
+  }
+
+  generateRefreshToken(userId) {
+    return jwt.sign({ userId }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' })
+  }
+
+  async hashAndStoreRefreshToken(userId, refreshToken) {
+    const hashed = await bcrypt.hash(refreshToken, 12)
+    await prisma.user.update({
+      where: { id: userId },
+      data: { refresh_token: hashed },
+    })
   }
 }

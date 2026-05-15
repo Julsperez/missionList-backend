@@ -1,7 +1,7 @@
 import {
   handleRegister,
   handleVerifyEmail,
-  loginHandler,
+  handleLogin,
   refreshTokenHandler,
   logoutHandler,
 } from './auth.controller.js'
@@ -30,10 +30,22 @@ const verifyEmailSchema = {
   },
 }
 
+const loginSchema = {
+  body: {
+    type: 'object',
+    required: ['email', 'password'],
+    properties: {
+      email: { type: 'string', format: 'email' },
+      password: { type: 'string', minLength: 1 },
+    },
+    additionalProperties: false,
+  },
+}
+
 export async function authRoutes(app) {
   app.post('/register', { schema: registerSchema }, handleRegister)
   app.post('/verify-email', { schema: verifyEmailSchema }, handleVerifyEmail)
-  app.post('/login', loginHandler)
+  app.post('/login', { schema: loginSchema }, handleLogin)
   app.post('/refresh', refreshTokenHandler)
   app.post('/logout', { onRequest: [app.authenticate] }, logoutHandler)
 }

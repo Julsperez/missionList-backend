@@ -12,8 +12,30 @@ export async function handleVerifyEmail(request, reply) {
   return reply.send(result)
 }
 
-export async function loginHandler(request, reply) {
-  return reply.send(await authService.login(request.body))
+export async function handleLogin(request, reply) {
+  const user = await authService.validateCredentials(request.body)
+
+  const accessToken = authService.generateAccessToken(user.id, user.email)
+  const refreshToken = authService.generateRefreshToken(user.id)
+
+  await authService.hashAndStoreRefreshToken(user.id, refreshToken)
+
+  reply.setCookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60,
+    path: '/api/v1/auth',
+  })
+
+  return reply.send({
+    accessToken,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.profile?.name,
+    },
+  })
 }
 
 export async function refreshTokenHandler(_request, reply) {
