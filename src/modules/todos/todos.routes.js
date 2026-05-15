@@ -1,5 +1,11 @@
-import { getTodosHandler } from './todos.controller.js'
+import { getTodosHandler, createTodoHandler, getTodoByIdHandler, updateTodoHandler, deleteTodoHandler } from './todos.controller.js'
 
 export async function todosRoutes(app) {
-  app.get('/', { onRequest: [app.authenticate] }, getTodosHandler)
+  const auth = { onRequest: [app.authenticate] }
+
+  app.get('/', auth, getTodosHandler)
+  app.post('/', auth, createTodoHandler)
+  app.get('/:id', auth, getTodoByIdHandler)
+  app.patch('/:id', auth, updateTodoHandler)
+  app.delete('/:id', auth, deleteTodoHandler)
 }
