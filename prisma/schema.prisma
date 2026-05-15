@@ -15,7 +15,7 @@ model User {
   is_verified         Boolean   @default(false)
   verify_token        String?
   reset_token         String?
-  reset_token_expires DateTime?
+  reset_token_expires_at DateTime?
   created_at          DateTime  @default(now())
 
   profile  Profile?
