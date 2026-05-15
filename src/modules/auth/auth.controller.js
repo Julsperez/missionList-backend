@@ -38,10 +38,37 @@ export async function handleLogin(request, reply) {
   })
 }
 
-export async function refreshTokenHandler(_request, reply) {
-  return reply.code(501).send({ message: 'Not implemented' })
+export async function handleRefreshToken(request, reply) {
+  const incomingToken = request.cookies.refreshToken
+
+  if (!incomingToken) {
+    return reply.code(401).send({ error: true, message: 'No refresh token provided' })
+  }
+
+  const { newAccessToken, newRefreshToken, user } =
+    await authService.rotateRefreshToken(incomingToken)
+
+  reply.setCookie('refreshToken', newRefreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60,
+    path: '/api/v1/auth',
+  })
+
+  return reply.send({
+    accessToken: newAccessToken,
+    user: { id: user.id, email: user.email, name: user.profile?.name },
+  })
 }
 
-export async function logoutHandler(_request, reply) {
-  return reply.code(501).send({ message: 'Not implemented' })
+export async function handleLogout(request, reply) {
+  const incomingToken = request.cookies.refreshToken
+
+  if (incomingToken) {
+    await authService.clearRefreshToken(incomingToken)
+  }
+
+  reply.clearCookie('refreshToken', { path: '/api/v1/auth' })
+  return reply.send({ message: 'Logged out successfully.' })
 }

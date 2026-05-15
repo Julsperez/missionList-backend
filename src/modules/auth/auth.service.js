@@ -102,4 +102,52 @@ export class AuthService {
       data: { refresh_token: hashed },
     })
   }
+
+  async rotateRefreshToken(incomingToken) {
+    let payload
+    try {
+      payload = jwt.verify(incomingToken, process.env.JWT_REFRESH_SECRET)
+    } catch {
+      const err = new Error('Invalid or expired refresh token')
+      err.statusCode = 401
+      throw err
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      include: { profile: true },
+    })
+
+    if (!user || !user.refresh_token) {
+      const err = new Error('Invalid refresh token')
+      err.statusCode = 401
+      throw err
+    }
+
+    const isValid = await bcrypt.compare(incomingToken, user.refresh_token)
+    if (!isValid) {
+      await prisma.user.update({ where: { id: user.id }, data: { refresh_token: null } })
+      const err = new Error('Refresh token reuse detected')
+      err.statusCode = 401
+      throw err
+    }
+
+    const newAccessToken = this.generateAccessToken(user.id, user.email)
+    const newRefreshToken = this.generateRefreshToken(user.id)
+    await this.hashAndStoreRefreshToken(user.id, newRefreshToken)
+
+    return { newAccessToken, newRefreshToken, user }
+  }
+
+  async clearRefreshToken(incomingToken) {
+    try {
+      const payload = jwt.verify(incomingToken, process.env.JWT_REFRESH_SECRET)
+      await prisma.user.update({
+        where: { id: payload.userId },
+        data: { refresh_token: null },
+      })
+    } catch {
+      // Token expirado o inválido — la cookie se borra en el controller de todas formas
+    }
+  }
 }

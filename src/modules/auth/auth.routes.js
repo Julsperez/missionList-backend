@@ -2,8 +2,8 @@ import {
   handleRegister,
   handleVerifyEmail,
   handleLogin,
-  refreshTokenHandler,
-  logoutHandler,
+  handleRefreshToken,
+  handleLogout,
 } from './auth.controller.js'
 
 const registerSchema = {
@@ -46,6 +46,6 @@ export async function authRoutes(app) {
   app.post('/register', { schema: registerSchema }, handleRegister)
   app.post('/verify-email', { schema: verifyEmailSchema }, handleVerifyEmail)
   app.post('/login', { schema: loginSchema }, handleLogin)
-  app.post('/refresh', refreshTokenHandler)
-  app.post('/logout', { onRequest: [app.authenticate] }, logoutHandler)
+  app.post('/refresh-token', handleRefreshToken)
+  app.post('/logout', handleLogout)
 }
