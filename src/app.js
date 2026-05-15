@@ -8,6 +8,7 @@ import { authenticate } from './middleware/authenticate.js'
 import { authRoutes } from './modules/auth/auth.routes.js'
 import { usersRoutes } from './modules/users/users.routes.js'
 import { todosRoutes } from './modules/todos/todos.routes.js'
+import { healthRoutes } from './routes/health.js'
 
 export async function buildApp(opts = {}) {
   const app = Fastify({
@@ -57,6 +58,7 @@ export async function buildApp(opts = {}) {
   })
 
   app.get('/health', async () => ({ status: 'ok' }))
+  app.register(healthRoutes, { prefix: '/api/v1/health' })
 
   return app
 }

@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "missionlist-todos-b08",
-    "name": "MissionList Backend — Todos",
-    "description": "CRUD completo del módulo de tareas (B-08). Configurar las variables base_url y access_token antes de usar.",
+    "_postman_id": "missionlist-todos-b09",
+    "name": "MissionList Backend",
+    "description": "CRUD de tareas + migración masiva + health check (B-08, B-09). Configurar las variables base_url y access_token antes de usar.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -16,6 +16,28 @@
     ]
   },
   "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "health"]
+            },
+            "description": "Health check público. No requiere autenticación. Devuelve { status: 'ok', timestamp }."
+          },
+          "response": []
+        }
+      ]
+    },
     {
       "name": "Todos",
       "item": [
@@ -59,6 +81,35 @@
               "path": ["api", "v1", "todos"]
             },
             "description": "Crea una nueva tarea. Devuelve 201 con el objeto completo. Campos requeridos: mission_id, title."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /todos/migrate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"mission_id\": \"m-001\", \"title\": \"Tarea 1\" },\n  { \"mission_id\": \"m-002\", \"title\": \"Tarea 2\" },\n  { \"mission_id\": \"m-003\", \"title\": \"Tarea 3\" }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/todos/migrate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "todos", "migrate"]
+            },
+            "description": "Importación masiva desde localStorage. Body: array de todos. Devuelve { imported: N, skipped: M }. Si un mission_id ya existe para el usuario, esa tarea se omite sin fallar."
           },
           "response": []
         },

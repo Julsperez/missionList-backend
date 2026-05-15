@@ -38,4 +38,24 @@ export class TodosService {
     await this.findByIdAndUser(id, userId)
     await prisma.todo.delete({ where: { id } })
   }
+
+  async migrateTodos(userId, todos) {
+    return prisma.$transaction(async (tx) => {
+      const existing = await tx.todo.findMany({
+        where: { user_id: userId },
+        select: { mission_id: true },
+      })
+
+      const existingIds = new Set(existing.map((t) => t.mission_id))
+      const toCreate = todos.filter((t) => !existingIds.has(t.mission_id))
+
+      if (toCreate.length > 0) {
+        await tx.todo.createMany({
+          data: toCreate.map((t) => ({ ...t, user_id: userId })),
+        })
+      }
+
+      return { imported: toCreate.length, skipped: todos.length - toCreate.length }
+    })
+  }
 }

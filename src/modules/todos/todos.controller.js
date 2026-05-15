@@ -22,3 +22,8 @@ export async function deleteTodoHandler(request, reply) {
   await todosService.delete(request.params.id, request.user.userId)
   return reply.code(204).send()
 }
+
+export async function migrateTodosHandler(request, reply) {
+  const result = await todosService.migrateTodos(request.user.userId, request.body)
+  return reply.send(result)
+}
