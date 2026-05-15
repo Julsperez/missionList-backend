@@ -2,9 +2,14 @@ import { AuthService } from './auth.service.js'
 
 const authService = new AuthService()
 
-export async function registerHandler(request, reply) {
+export async function handleRegister(request, reply) {
   const result = await authService.register(request.body)
   return reply.code(201).send(result)
+}
+
+export async function handleVerifyEmail(request, reply) {
+  const result = await authService.verifyEmail(request.body)
+  return reply.send(result)
 }
 
 export async function loginHandler(request, reply) {

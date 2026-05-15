@@ -1,5 +1,7 @@
+import crypto from 'crypto'
 import { prisma } from '../../lib/prisma.js'
 import bcrypt from 'bcrypt'
+import { sendVerificationEmail } from '../email/email.service.js'
 
 export class AuthService {
   async register({ email, password, name }) {
@@ -11,17 +13,59 @@ export class AuthService {
     }
 
     const password_hash = await bcrypt.hash(password, 12)
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password_hash,
-        profile: { create: { name } },
-        settings: { create: {} },
-      },
-      include: { profile: true },
+    const verify_token = crypto.randomBytes(32).toString('hex')
+    const verify_token_expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000)
+
+    const user = await prisma.$transaction(async (tx) => {
+      return tx.user.create({
+        data: {
+          email,
+          password_hash,
+          verify_token,
+          verify_token_expires_at,
+          profile: { create: { name } },
+          settings: { create: {} },
+        },
+        include: { profile: true },
+      })
     })
 
-    return { id: user.id, email: user.email, name: user.profile.name }
+    await sendVerificationEmail({ to: email, name: user.profile.name, token: verify_token })
+
+    return { message: 'Registration successful. Please check your email to verify your account.' }
+  }
+
+  async verifyEmail({ token }) {
+    const user = await prisma.user.findFirst({ where: { verify_token: token } })
+
+    if (!user) {
+      const err = new Error('Invalid verification token')
+      err.statusCode = 400
+      throw err
+    }
+
+    if (user.is_verified) {
+      const err = new Error('Email already verified')
+      err.statusCode = 400
+      throw err
+    }
+
+    if (user.verify_token_expires_at < new Date()) {
+      const err = new Error('Verification token expired')
+      err.statusCode = 410
+      throw err
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        is_verified: true,
+        verify_token: null,
+        verify_token_expires_at: null,
+      },
+    })
+
+    return { message: 'Email verified successfully.' }
   }
 
   async login({ email, password }) {
@@ -30,6 +74,12 @@ export class AuthService {
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
       const err = new Error('Invalid credentials')
       err.statusCode = 401
+      throw err
+    }
+
+    if (!user.is_verified) {
+      const err = new Error('Please verify your email before logging in')
+      err.statusCode = 403
       throw err
     }
 
