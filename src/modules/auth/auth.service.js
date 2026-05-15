@@ -150,4 +150,58 @@ export class AuthService {
       // Token expirado o inválido — la cookie se borra en el controller de todas formas
     }
   }
+
+  async generateResetToken(email) {
+    const user = await prisma.user.findUnique({ where: { email }, include: { profile: true } })
+    if (!user) return null
+
+    const plainToken = crypto.randomBytes(32).toString('hex')
+    const hashedToken = crypto.createHash('sha256').update(plainToken).digest('hex')
+    const reset_token_expires_at = new Date(Date.now() + 60 * 60 * 1000)
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { reset_token: hashedToken, reset_token_expires_at },
+    })
+
+    return { user, plainToken }
+  }
+
+  async validateResetToken(token) {
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
+    const user = await prisma.user.findFirst({ where: { reset_token: hashedToken } })
+
+    if (!user) {
+      const err = new Error('Invalid or expired reset token')
+      err.statusCode = 400
+      throw err
+    }
+
+    if (user.reset_token_expires_at < new Date()) {
+      const err = new Error('Reset token has expired')
+      err.statusCode = 410
+      throw err
+    }
+
+    return user
+  }
+
+  async updatePassword(userId, newPassword) {
+    const password_hash = await bcrypt.hash(newPassword, 12)
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        password_hash,
+        reset_token: null,
+        reset_token_expires_at: null,
+      },
+    })
+  }
+
+  async invalidateAllSessions(userId) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { refresh_token: null },
+    })
+  }
 }

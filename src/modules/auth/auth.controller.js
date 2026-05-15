@@ -1,4 +1,5 @@
 import { AuthService } from './auth.service.js'
+import { sendPasswordResetEmail } from '../email/email.service.js'
 
 const authService = new AuthService()
 
@@ -71,4 +72,28 @@ export async function handleLogout(request, reply) {
 
   reply.clearCookie('refreshToken', { path: '/api/v1/auth' })
   return reply.send({ message: 'Logged out successfully.' })
+}
+
+export async function handleForgotPassword(request, reply) {
+  const { email } = request.body
+  const result = await authService.generateResetToken(email)
+
+  if (result) {
+    const { user, plainToken } = result
+    await sendPasswordResetEmail({
+      to: email,
+      name: user.profile?.name || email,
+      token: plainToken,
+    })
+  }
+
+  return reply.send({ message: 'If that email exists, a reset link has been sent.' })
+}
+
+export async function handleResetPassword(request, reply) {
+  const { token, password } = request.body
+  const user = await authService.validateResetToken(token)
+  await authService.updatePassword(user.id, password)
+  await authService.invalidateAllSessions(user.id)
+  return reply.send({ message: 'Password reset successfully.' })
 }
