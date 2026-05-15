@@ -11,7 +11,7 @@ export async function createTodoHandler(request, reply) {
 }
 
 export async function getTodoByIdHandler(request, reply) {
-  return reply.send(await todosService.findByIdAndUser(request.params.id, request.user.userId))
+  return reply.send(await todosService.findByMissionIdAndUser(request.params.id, request.user.userId))
 }
 
 export async function updateTodoHandler(request, reply) {
@@ -24,6 +24,6 @@ export async function deleteTodoHandler(request, reply) {
 }
 
 export async function migrateTodosHandler(request, reply) {
-  const result = await todosService.migrateTodos(request.user.userId, request.body)
+  const result = await todosService.migrateTodos(request.user.userId, request.body.todos)
   return reply.send(result)
 }
