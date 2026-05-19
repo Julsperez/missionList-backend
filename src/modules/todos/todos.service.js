@@ -11,6 +11,7 @@ function toSnake(data) {
   if (data.typeofMission !== undefined) mapped.type_of_mission = data.typeofMission
   if (data.dueDate       !== undefined) mapped.due_date        = data.dueDate ? new Date(data.dueDate).toISOString() : null
   if (data.objectives    !== undefined) mapped.objectives      = data.objectives
+  if (data.listId        !== undefined) mapped.list_id         = data.listId ?? null
   return mapped
 }
 
@@ -19,6 +20,7 @@ function toCamel(todo) {
   return {
     id:            todo.id,
     missionId:     todo.mission_id,
+    listId:        todo.list_id        ?? null,
     title:         todo.title,
     subtitle:      todo.subtitle       ?? '',
     description:   todo.description    ?? '',
@@ -34,11 +36,10 @@ function toCamel(todo) {
 
 
 export class TodosService {
-  async findByUser(userId) {
-    const todos = await prisma.todo.findMany({
-      where: { user_id: userId },
-      orderBy: { created_at: 'desc' },
-    })
+  async findByUser(userId, listId) {
+    const where = { user_id: userId }
+    if (listId) where.list_id = listId
+    const todos = await prisma.todo.findMany({ where, orderBy: { created_at: 'desc' } })
     return todos.map(toCamel)
   }
 
