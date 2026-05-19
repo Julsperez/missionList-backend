@@ -1,3 +1,4 @@
+import bcrypt from 'bcrypt'
 import { prisma } from '../../lib/prisma.js'
 
 export class UsersService {
@@ -63,6 +64,28 @@ export class UsersService {
     }
 
     return this.getProfile(userId)
+  }
+
+  async changePassword(userId, { currentPassword, newPassword }) {
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) {
+      const err = new Error('User not found')
+      err.statusCode = 404
+      throw err
+    }
+
+    const valid = await bcrypt.compare(currentPassword, user.password_hash)
+    if (!valid) {
+      const err = new Error('Contraseña actual incorrecta.')
+      err.statusCode = 401
+      throw err
+    }
+
+    const password_hash = await bcrypt.hash(newPassword, 12)
+    await prisma.user.update({
+      where: { id: userId },
+      data:  { password_hash },
+    })
   }
 
   async deleteUser(userId) {
