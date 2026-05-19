@@ -9,7 +9,7 @@ function toSnake(data) {
   if (data.description   !== undefined) mapped.description     = data.description
   if (data.status        !== undefined) mapped.status          = data.status
   if (data.typeofMission !== undefined) mapped.type_of_mission = data.typeofMission
-  if (data.dueDate       !== undefined) mapped.due_date        = data.dueDate || null
+  if (data.dueDate       !== undefined) mapped.due_date        = data.dueDate ? new Date(data.dueDate).toISOString() : null
   if (data.objectives    !== undefined) mapped.objectives      = data.objectives
   return mapped
 }
