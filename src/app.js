@@ -8,6 +8,7 @@ import { authenticate } from './middleware/authenticate.js'
 import { authRoutes } from './modules/auth/auth.routes.js'
 import { usersRoutes } from './modules/users/users.routes.js'
 import { todosRoutes } from './modules/todos/todos.routes.js'
+import { listsRoutes } from './modules/lists/lists.routes.js'
 import { healthRoutes } from './routes/health.js'
 
 export async function buildApp(opts = {}) {
@@ -56,6 +57,7 @@ export async function buildApp(opts = {}) {
     })
     await scope.register(usersRoutes, { prefix: '/api/v1/users' })
     await scope.register(todosRoutes, { prefix: '/api/v1/todos' })
+    await scope.register(listsRoutes, { prefix: '/api/v1/lists' })
   })
 
   app.get('/health', async () => ({ status: 'ok' }))
