@@ -9,13 +9,18 @@ function toSnake(data) {
 }
 
 function toCamel(list) {
-  return {
-    id:        list.id,
+  const result = {
+    listId:    list.id,
     name:      list.name,
     color:     list.color,
     icon:      list.icon ?? null,
     createdAt: list.created_at,
   }
+  // activeCount is only present when the query included _count
+  if (list._count !== undefined) {
+    result.activeCount = list._count.todos ?? 0
+  }
+  return result
 }
 
 export class ListsService {
@@ -27,11 +32,21 @@ export class ListsService {
   }
 
   async findByUserId(userId) {
-    const lists = await prisma.list.findMany({
-      where: { user_id: userId },
-      orderBy: { created_at: 'asc' },
-    })
-    return lists.map(toCamel)
+    const [lists, totalCount] = await Promise.all([
+      prisma.list.findMany({
+        where:   { user_id: userId },
+        orderBy: { created_at: 'asc' },
+        include: {
+          _count: {
+            select: { todos: { where: { status: { not: 'archived' } } } },
+          },
+        },
+      }),
+      prisma.todo.count({
+        where: { user_id: userId, status: { not: 'archived' } },
+      }),
+    ])
+    return { lists: lists.map(toCamel), totalCount }
   }
 
   async #findOwned(listId, userId) {
