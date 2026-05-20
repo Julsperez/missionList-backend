@@ -70,7 +70,9 @@ export async function buildApp(opts = {}) {
     await scope.register(listsRoutes, { prefix: '/api/v1/lists' })
   })
 
-  app.get('/health', async () => ({ status: 'ok' }))
+  // logLevel: 'silent' suprime los logs de request/response en estas rutas
+  // evitando ruido por keep-alive pings y health checks de Render
+  app.get('/health', { logLevel: 'silent' }, async () => ({ status: 'ok' }))
   app.register(healthRoutes, { prefix: '/api/v1/health' })
 
   return app
