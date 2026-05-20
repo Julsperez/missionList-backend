@@ -1,0 +1,62 @@
+# render.yaml — Infraestructura del backend en Render
+#
+# Deploy: conecta el repo en render.com → New Web Service → "Use render.yaml"
+#
+# Variables marcadas con sync: false NO se leen de este archivo;
+# debes setearlas manualmente en Render Dashboard → Environment.
+# Las que tienen `value` se aplican automáticamente.
+
+services:
+  - type: web
+    name: mission-list-api
+    runtime: node
+    plan: free
+
+    # Render lee `engines.node` de package.json para elegir la versión de Node.
+    # El proyecto requiere >=22, Render usará Node 22.x automáticamente.
+
+    buildCommand: npm install
+    startCommand: npm run start:prod
+
+    # Render llama a este path para verificar que el servicio está sano.
+    # Si devuelve 2xx en < 30s, el deploy se marca como exitoso.
+    healthCheckPath: /health
+
+    envVars:
+      # ── Server ──────────────────────────────────────────────────────────
+      - key: NODE_ENV
+        value: production
+      # PORT es inyectado automáticamente por Render — no lo configures.
+
+      # ── Database ─────────────────────────────────────────────────────────
+      # Set manually in Render Dashboard (Environment tab).
+      - key: DATABASE_URL
+        sync: false
+
+      # ── JWT ──────────────────────────────────────────────────────────────
+      # Genera valores seguros con:
+      #   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+
+      # ── Email (Resend) ────────────────────────────────────────────────────
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        value: studio@julsperez.com
+
+      # ── Frontend ──────────────────────────────────────────────────────────
+      # FRONTEND_URL: usado en los links de los emails (sin trailing slash).
+      # CORS_ORIGIN:  origen exacto para CORS (solo scheme + host, sin path).
+      - key: FRONTEND_URL
+        value: https://julsperez.github.io/Mission-TODO-List
+      - key: CORS_ORIGIN
+        value: https://julsperez.github.io
+
+      # ── Rate limiting ────────────────────────────────────────────────────
+      - key: AUTH_RATE_LIMIT
+        value: 10
+      - key: API_RATE_LIMIT
+        value: 200

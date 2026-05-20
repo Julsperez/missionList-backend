@@ -3,6 +3,22 @@ import { sendPasswordResetEmail } from '../email/email.service.js'
 
 const authService = new AuthService()
 
+/**
+ * Opciones de cookie para el refresh token.
+ * En producción el frontend y el backend están en dominios distintos
+ * (GitHub Pages vs Railway), por lo que necesitamos SameSite=None + Secure.
+ * En desarrollo usamos SameSite=Lax + sin Secure para compatibilidad local.
+ */
+const IS_PROD = process.env.NODE_ENV === 'production'
+
+const REFRESH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: IS_PROD,
+  sameSite: IS_PROD ? 'none' : 'lax',
+  maxAge: 7 * 24 * 60 * 60, // 7 días en segundos
+  path: '/api/v1/auth',
+}
+
 export async function handleRegister(request, reply) {
   const result = await authService.register(request.body)
   return reply.code(201).send(result)
@@ -21,13 +37,7 @@ export async function handleLogin(request, reply) {
 
   await authService.hashAndStoreRefreshToken(user.id, refreshToken)
 
-  reply.setCookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60,
-    path: '/api/v1/auth',
-  })
+  reply.setCookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS)
 
   return reply.send({
     accessToken,
@@ -49,13 +59,7 @@ export async function handleRefreshToken(request, reply) {
   const { newAccessToken, newRefreshToken, user } =
     await authService.rotateRefreshToken(incomingToken)
 
-  reply.setCookie('refreshToken', newRefreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60,
-    path: '/api/v1/auth',
-  })
+  reply.setCookie('refreshToken', newRefreshToken, REFRESH_COOKIE_OPTIONS)
 
   return reply.send({
     accessToken: newAccessToken,
@@ -70,7 +74,14 @@ export async function handleLogout(request, reply) {
     await authService.clearRefreshToken(incomingToken)
   }
 
-  reply.clearCookie('refreshToken', { path: '/api/v1/auth' })
+  // Usar las mismas opciones (sin maxAge) para que el browser limpie correctamente
+  reply.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: IS_PROD,
+    sameSite: IS_PROD ? 'none' : 'lax',
+    path: '/api/v1/auth',
+  })
+
   return reply.send({ message: 'Logged out successfully.' })
 }
 

@@ -1,0 +1,31 @@
+name: Keep-Alive Ping
+
+# Corre cada 13 minutos, las 24h.
+# El script keepalive.js decide si hacer el ping según la hora local.
+on:
+  schedule:
+    - cron: '*/13 * * * *'
+  workflow_dispatch:   # permite disparo manual desde GitHub UI
+
+jobs:
+  ping:
+    name: Ping backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run keepalive script
+        env:
+          BACKEND_URL:   ${{ secrets.KEEPALIVE_BACKEND_URL }}
+          KEEPALIVE_TZ:  America/Mexico_City
+          ACTIVE_FROM:   '10'
+          ACTIVE_TO:     '22'
+        run: node scripts/keepalive.js

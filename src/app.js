@@ -19,8 +19,18 @@ export async function buildApp(opts = {}) {
     ...opts,
   })
 
+  // Soporta lista de orígenes separada por comas: CORS_ORIGIN=https://a.com,https://b.com
+  const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean)
+
   await app.register(cors, {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: (origin, cb) => {
+      // Permitir peticiones sin origen (Postman, curl, health-checks internos)
+      if (!origin || allowedOrigins.includes(origin)) return cb(null, true)
+      cb(new Error(`CORS: origin ${origin} not allowed`))
+    },
     credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   })
